@@ -123,4 +123,22 @@ Isso tem escopo estreito, de propósito:
 
 `AggregateErrors()` também funciona com o `plainToInstance` do `class-transformer`, inclusive no `ValidationPipe({ transform: true })` do Nest. Um DTO decorado abre uma janela temporária de agregação após a construção: escritas inválidas enquanto o `plainToInstance` o preenche são coletadas, e a próxima fronteira de parâmetro tipada as une à validação estrutural completa. Isso também encontra campos obrigatórios ausentes e chaves não declaradas. Um DTO decorado aninhado é drenado quando o objeto, array, tupla, `Map` ou `Set` que o contém é validado estruturalmente; assim, uma escrita inválida não pode ser aceita silenciosamente por manter o valor padrão anterior.
 
-Use o recurso em valores no papel de DTO, construídos e imediatamente passados por um parâmetro tipado. Uma instância decorada mutada indefinidamente sem cruzar essa fronteira mantém a janela aberta, então escritas inválidas posteriores são coletadas mas não aparecem. Entrada bruta inválida para um campo `ValueObject` ainda lança imediatamente, em vez de entrar no agregado; veja [Limitações](./limitations.md).
+Use o recurso em valores no papel de DTO, construídos e imediatamente passados por um parâmetro tipado. Uma instância decorada mutada indefinidamente sem cruzar essa fronteira mantém a janela aberta até ser coletada pelo garbage collector, momento em que qualquer violação ainda bufferizada só é reportada por um aviso via `console.error` (customizável com `setAggregateWindowLeakHandler`) — não lançada, já que não há mais um chamador para capturar nada, e sem previsibilidade de quando isso acontece, já que o timing do GC também não tem. Entrada bruta inválida para um campo `ValueObject` ainda lança imediatamente, em vez de entrar no agregado; veja [Limitações](./limitations.md).
+
+Se você preenche uma instância decorada manualmente — o caso mais comum é um `plainToInstance` fora de uma fronteira de parâmetro tipada, como dentro de um `ValidationPipe` customizado antes do método do controller rodar — e nada jamais vai cruzar essa instância por um parâmetro tipado depois, chame `closeAggregateWindowOrThrow(instance)` logo após preenchê-la:
+
+```ts
+import { AggregateErrors, closeAggregateWindowOrThrow } from '@ts-typed/core';
+import { plainToInstance } from 'class-transformer';
+
+@AggregateErrors()
+class CreateUserDto {
+  public name: string = '';
+  public age: number = 0;
+}
+
+const dto = plainToInstance(CreateUserDto, rawBody);
+closeAggregateWindowOrThrow(dto); // lança AggregateStrictTypeError com todas as violações, de forma síncrona
+```
+
+Isso fecha a janela imediatamente e, se algo foi bufferizado, lança `AggregateStrictTypeError` com todas as violações coletadas ali mesmo — sem esperar o GC, sem o fallback de `console.error`, sem condição de corrida. É um no-op (não lança) quando a janela nunca esteve aberta, ou estava aberta mas vazia, então é seguro chamar defensivamente mesmo sem ter certeza se algo foi coletado.

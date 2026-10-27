@@ -123,4 +123,22 @@ This is scoped narrowly, on purpose:
 
 `AggregateErrors()` also works with `class-transformer`'s `plainToInstance`, including Nest's `ValidationPipe({ transform: true })`. A decorated DTO opens a temporary aggregate window after construction: invalid field writes made while `plainToInstance` populates it are collected, and the next typed parameter boundary merges them with the complete structural check. That also catches missing required fields and undeclared keys. A decorated nested DTO is drained when its enclosing object, array, tuple, `Map`, or `Set` is structurally checked, so an invalid field write cannot be silently accepted by retaining its old default value.
 
-Keep this for DTO-style values that are constructed and immediately passed through a typed parameter. A decorated instance that is mutated indefinitely without reaching such a boundary keeps its window open, so later invalid writes are collected but never surfaced. Invalid raw input for a `ValueObject` field still throws immediately instead of joining the aggregate; see [Limitations](./limitations.md).
+Keep this for DTO-style values that are constructed and immediately passed through a typed parameter. A decorated instance that is mutated indefinitely without reaching such a boundary keeps its window open until it is garbage-collected, at which point any still-buffered violations are only reported through a `console.error` warning (customizable via `setAggregateWindowLeakHandler`) — not thrown, since there is no caller left to catch anything, and not on any predictable schedule, since GC timing isn't. Invalid raw input for a `ValueObject` field still throws immediately instead of joining the aggregate; see [Limitations](./limitations.md).
+
+If you populate a decorated instance by hand — most commonly `plainToInstance` outside of a typed parameter boundary, such as inside a custom `ValidationPipe` before the controller method runs — and nothing will ever cross it through a typed parameter afterward, call `closeAggregateWindowOrThrow(instance)` right after populating it:
+
+```ts
+import { AggregateErrors, closeAggregateWindowOrThrow } from '@ts-typed/core';
+import { plainToInstance } from 'class-transformer';
+
+@AggregateErrors()
+class CreateUserDto {
+  public name: string = '';
+  public age: number = 0;
+}
+
+const dto = plainToInstance(CreateUserDto, rawBody);
+closeAggregateWindowOrThrow(dto); // throws AggregateStrictTypeError with every violation, synchronously
+```
+
+This closes the window immediately and, if anything was buffered, throws `AggregateStrictTypeError` with every collected violation right there — no waiting on GC, no `console.error` fallback, no race. It is a no-op (no throw) when the window was never open, or open but empty, so it's safe to call defensively even when you're not sure whether anything was collected.
