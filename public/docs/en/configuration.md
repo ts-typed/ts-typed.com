@@ -11,7 +11,7 @@ TS Typed reads its settings from a `typets.config.json` file at the root of your
   "allowExtraPropertiesAll": false,
   "compiler": {
     "onUnsupported": "warn",
-    "strictClass": false,
+    "strictClass": true,
     "enforcePrivate": true,
     "enforceReadonly": true,
     "enforceClosedInstances": false,
@@ -41,7 +41,7 @@ The table below lists every configuration key, its default value, and what it co
 | `integration` | `"typescript"` | Framework adapter (e.g. `"nestjs"`). |
 | `allowExtraPropertiesAll` | `false` | Globally allow extra properties on every object boundary (same effect as `AllowExtraProperties()` everywhere). |
 | `compiler.onUnsupported` | `"warn"` | `"warn"` or `"error"` when a type can't be given a runtime contract (e.g. a generic type parameter with no concrete type). |
-| `compiler.strictClass` | `false` | Default nominal (`instanceof`) vs. structural validation for class-typed values. Override per class with `StrictClass()`/`StructuralClass()` decorators. |
+| `compiler.strictClass` | `true` | Default nominal (`instanceof`) vs. structural validation for class-typed values. `instanceof` is embedded whenever the compiler can reach the class — same file, or another file when it's imported there by name. Override per class with `StrictClass()`/`StructuralClass()` decorators. |
 | `compiler.enforcePrivate` | `true` | Instrument `private`/`protected` class fields. |
 | `compiler.enforceReadonly` | `true` | Lock a `readonly` class field after its first validated assignment (skipped for `?`/`!` fields). |
 | `compiler.enforceClosedInstances` | `false` | **Opt-in.** Seal a class instance (`Object.preventExtensions`) once its most-derived constructor completes — no new property can be added afterward. |

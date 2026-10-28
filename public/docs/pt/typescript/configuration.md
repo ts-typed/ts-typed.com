@@ -15,7 +15,7 @@
   "compiler": {
     "sourceMap": true,
     "onUnsupported": "warn",
-    "strictClass": false,
+    "strictClass": true,
     "enforcePrivate": true,
     "enforceReadonly": true,
     "enforceClosedInstances": false,
@@ -45,7 +45,7 @@
 
 `onUnsupported` é `warn` ou `error`. Comece com `warn` para descobrir contratos sem representação de runtime; depois use `error` no CI para não publicar uma fronteira que você imaginava protegida.
 
-`strictClass: false` valida classes estruturalmente, como o TypeScript, e é a escolha usual para DTOs JSON. `true` exige `instanceof` onde há uma referência viva à classe; reserve para objetos de domínio que só surgem por construção controlada. Prefira `@StrictClass()` e `@StructuralClass()` para exceções locais.
+`strictClass` agora é `true` por padrão: o compilador exige `instanceof` sempre que consegue alcançar a classe com uma referência viva — mesmo arquivo, ou outro arquivo quando a classe é importada lá pelo nome. Para DTOs JSON que chegam como objeto simples (ex.: `@Body()` do Nest, `express.json()`), defina `strictClass: false` globalmente ou decore o DTO com `@StructuralClass()`; reserve o `true` para objetos de domínio que só surgem por construção controlada. Prefira `@StrictClass()`/`@StructuralClass()` para exceções locais ao padrão global.
 
 `enforcePrivate: true` converte `private`/`protected` em privacidade real. Acesso por colchetes a um desses campos impede o build. `enforceReadonly: true` bloqueia uma segunda escrita em `readonly`; campos com `?` ou `!` permanecem preenchíveis depois da construção para compatibilidade com mapeadores.
 

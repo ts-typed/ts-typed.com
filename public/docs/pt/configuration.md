@@ -11,7 +11,7 @@ O TS Typed lê suas configurações de um arquivo `typets.config.json` na raiz d
   "allowExtraPropertiesAll": false,
   "compiler": {
     "onUnsupported": "warn",
-    "strictClass": false,
+    "strictClass": true,
     "enforcePrivate": true,
     "enforceReadonly": true,
     "enforceClosedInstances": false,
@@ -41,7 +41,7 @@ A tabela a seguir lista todas as chaves de configuração, seus valores padrão 
 | `integration` | `"typescript"` | Adaptador do framework (por exemplo, `"nestjs"`). |
 | `allowExtraPropertiesAll` | `false` | Permite globalmente propriedades extras em todas as fronteiras de objetos (mesmo efeito de `AllowExtraProperties()` aplicado em todos os lugares). |
 | `compiler.onUnsupported` | `"warn"` | `"warn"` ou `"error"` quando um tipo não pode receber um contrato em tempo de execução (por exemplo, um parâmetro de tipo genérico sem tipo concreto). |
-| `compiler.strictClass` | `false` | Validação padrão nominal (`instanceof`) ou estrutural para valores tipados por classe. Pode ser sobrescrita por classe com os decoradores `StrictClass()`/`StructuralClass()`. |
+| `compiler.strictClass` | `true` | Validação padrão nominal (`instanceof`) ou estrutural para valores tipados por classe. `instanceof` é embutido sempre que o compilador consegue alcançar a classe — mesmo arquivo, ou outro arquivo quando ela é importada lá pelo nome. Pode ser sobrescrita por classe com os decoradores `StrictClass()`/`StructuralClass()`. |
 | `compiler.enforcePrivate` | `true` | Instrumenta os campos `private`/`protected` das classes. |
 | `compiler.enforceReadonly` | `true` | Trava um campo `readonly` da classe após sua primeira atribuição validada (ignorado para campos `?`/`!`). |
 | `compiler.enforceClosedInstances` | `false` | **Opt-in.** Sela uma instância de classe (`Object.preventExtensions`) assim que o construtor mais derivado termina. Nenhuma nova propriedade pode ser adicionada depois. |

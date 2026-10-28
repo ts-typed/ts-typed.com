@@ -26,7 +26,7 @@ A configuração é o mesmo `typets.config.json` do compilador, com `integration
 
 `entry` precisa ser o arquivo que cria a app Express; o instalador do handler lê essa mesma chave (padrão `src/main.ts`). `tsconfig`, `outDir`, `assets` e `extends` têm o mesmo significado do TypeScript puro. `assets` recebe pares `{ from, to }`, com destino relativo ao `outDir`.
 
-Para APIs JSON, mantenha `allowExtraPropertiesAll: false`: uma chave desconhecida em DTO é rejeitada em vez de atravessar o serviço. Use `@AllowExtraProperties()` só em payloads extensíveis conhecidos. `strictClass: false` é apropriado quando entradas são objetos simples de `express.json()`; `true` exige instâncias reais e normalmente não é a escolha para request bodies.
+Para APIs JSON, mantenha `allowExtraPropertiesAll: false`: uma chave desconhecida em DTO é rejeitada em vez de atravessar o serviço. Use `@AllowExtraProperties()` só em payloads extensíveis conhecidos. `compiler.strictClass` agora é `true` por padrão; como entradas de `express.json()` chegam como objeto simples (não instâncias reais), defina `strictClass: false` para request bodies, como no exemplo acima, ou decore o DTO com `@StructuralClass()`.
 
 Mantenha `enforceClosedInstances` desligado até validar seus mapeadores, e `enforceMutationGuards` desligado até medir: ele usa `Proxy` e altera a identidade de valores que cruzam a fronteira. `onUnsupported: "warn"` facilita a adoção; promova para `"error"` no CI depois de tratar avisos.
 
