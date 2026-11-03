@@ -74,6 +74,10 @@ collect<number>(...mixed); // same check, applied to the spread values
 
 If a type parameter isn't referenced by any argument and there is no expected type at the call site to drive it from, TypeScript resolves it to `unknown`. TS Typed treats that the same way it treats any other unsupported type: no contract is generated for that boundary, rather than validating against the wrong thing.
 
+## A generic never called or constructed
+
+A generic class or method used only as a type annotation — never actually called or constructed anywhere — has no call site to resolve an instantiated signature from, so this feature has nothing to attach to. When that unresolved type parameter carries an explicit `extends` constraint (`T extends { id: number }`), it's now validated against that constraint instead — reported as `"partial"` coverage rather than `"unsupported"`. With no `extends` (an implicit `unknown` constraint), or when the constraint itself is unsupported, it stays fully unprotected, same as any other unresolved type.
+
 ## What's still not covered
 
 Generators are not covered — calling a generator function produces an iterator rather than a single return value, and the yielded values are not validated.

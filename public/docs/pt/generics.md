@@ -74,6 +74,10 @@ collect<number>(...misturados); // a mesma verificação, aplicada aos valores d
 
 Se um parâmetro de tipo não é referenciado por nenhum argumento e não há um tipo esperado no ponto de chamada para guiá-lo, o TypeScript o resolve como `unknown`. O TS Typed trata isso da mesma forma que trata qualquer outro tipo não suportado: nenhum contrato é gerado para essa fronteira, em vez de validar contra o tipo errado.
 
+## Um genérico nunca chamado ou construído
+
+Uma classe ou método genérico usado apenas como anotação de tipo — nunca realmente chamado ou construído em lugar algum — não tem ponto de chamada para resolver uma assinatura instanciada, então este recurso não tem onde se apoiar. Quando esse parâmetro de tipo não resolvido tem uma restrição `extends` explícita (`T extends { id: number }`), ele agora é validado contra essa restrição — reportado como cobertura `"partial"` em vez de `"unsupported"`. Sem `extends` (uma restrição implícita `unknown`), ou quando a própria restrição não é suportada, ele continua totalmente desprotegido, igual a qualquer outro tipo não resolvido.
+
 ## O que ainda não é coberto
 
 Geradores não são cobertos — chamar uma função geradora produz um iterador, e não um único valor de retorno, e os valores emitidos com `yield` não são validados.

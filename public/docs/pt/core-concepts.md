@@ -27,7 +27,7 @@ O parâmetro `user` é um typed boundary. Chamadas que passam um valor com a for
 
 As verificações em tempo de execução cobrem os tipos que você já usa:
 
-- **Primitivos e literais**: `string`, `number`, `boolean`, `bigint`, `symbol` e tipos literais. `null` e `undefined` são distinguidos corretamente. `NaN` e `Infinity` são aceitos como números comuns, sem nenhuma verificação de domínio.
+- **Primitivos e literais**: `string`, `number`, `boolean`, `bigint`, `symbol` e tipos literais. `null` e `undefined` são distinguidos corretamente. `NaN` e `Infinity` são aceitos como números comuns, sem nenhuma verificação de domínio — a menos que o campo seja tipado com [`Int`/`Float`/`Str`](#valores-com-intervalo-int-float-str), que rejeita esses valores e aplica seu próprio limite mínimo/máximo.
 - **Uniões, interseções e tuplas**, incluindo template literal types.
 - **Objetos são fechados por padrão.** Um objeto com uma propriedade extra e não declarada falha com `EXTRA_PROPERTY`. Isso é mais rigoroso do que o TypeScript puro, que aceita propriedades extras em muitas posições. Para desativar essa regra, use o decorator `AllowExtraProperties()` em uma classe ou defina a flag de configuração `allowExtraPropertiesAll`.
 - **Datas.** `Date` é validada como uma instância real de `Date`, e não como qualquer objeto.
@@ -42,6 +42,32 @@ As verificações em tempo de execução cobrem os tipos que você já usa:
 - **`Map`, `Set`, `ReadonlyMap` e `ReadonlySet`.** As entradas são validadas contra os tipos declarados de chave, valor e item. `WeakMap` e `WeakSet` não são suportados, porque o conteúdo não pode ser iterado.
 - **Generators, `async`/`await` e chamadas e construtores com generics explícitos.**
 - **Bindings de módulos CommonJS.** Um `let` ou `var` exportado é protegido no próprio objeto `exports`.
+
+## Valores com intervalo: `Int`, `Float`, `Str`
+
+`Int`, `Float` e `Str` colocam uma restrição de mínimo/máximo diretamente no tipo, sem precisar de decorator nem de uma classe validadora:
+
+```ts
+import type { Int, Float, Str } from '@ts-typed/core';
+
+class SignupDto {
+  age: Int<0, 150>;     // inteiro, 0..150
+  rating: Float<0, 5>;  // qualquer número finito, 0..5
+  nickname: Str<1, 20>; // string, comprimento 1..20
+}
+```
+
+- `Min`/`Max` (`MinLen`/`MaxLen` para `Str`) são cada um **independentemente opcional** — omita um deles para verificar só o outro:
+  ```ts
+  type Count = Int<0>;          // >= 0, sem limite superior
+  type Page = Int<number, 100>; // <= 100, sem limite inferior
+  ```
+- `Int` exige um inteiro (`Number.isInteger`); `Float` aceita qualquer número finito. Ambos rejeitam `NaN` e `±Infinity`, independentemente dos limites.
+- Envolver o tipo em um alias próprio preserva a restrição: `type Age = Int<0, 150>;` se comporta exatamente como usar `Int<0, 150>` diretamente.
+- Uma violação é reportada do mesmo jeito que qualquer outra divergência: `StrictTypeError` com `code: 'TYPE_MISMATCH'` e um `expected` descrevendo o limite que falhou (ex.: `"integer >= 0 and <= 150"`).
+- `Min` maior que `Max` (ex.: `Int<150, 0>`) é um erro de quem escreveu o código, não uma limitação do sistema de tipos: é reportado pela mesma via `compiler.onUnsupported` de qualquer outro contrato sem suporte (`"warn"` por padrão, `"error"` falha o build — veja [Configuração](./configuration.md)).
+- Como `Int`/`Float`/`Str` são tipos TypeScript comuns (branded), passar o mouse sobre um campo tipado com um deles no editor mostra a restrição (`Int<0, 150>`), não só `number` — não há nada para configurar nisso, é consequência de como o tipo é declarado.
+- Isso complementa os validadores baseados em `ValueObject` do [`@ts-typed/validators`](./validators.md) (`CPF`, `Email`, ...), sem substituí-los: use `Int`/`Float`/`Str` para um limite simples sobre um primitivo, e `ValueObject` quando o valor precisa de identidade/métodos próprios (formatação, máscara, verificações específicas do domínio).
 
 ## Erros: `StrictTypeError`
 

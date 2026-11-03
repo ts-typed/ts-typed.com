@@ -25,3 +25,5 @@ O caminho imutável usa `TTOptImmut`: valida o grafo uma vez e congela o POJO re
 - Reexecute o benchmark com seu schema e hardware antes de definir um orçamento de latência.
 
 O código e os comandos exatos ficam no repositório. Comandos dependentes da CLI exigem revisão factual final; esta página não inventa flags do compilador.
+
+Esses números são de antes dos guards de mutação lazy, cobertos em [Performance](./performance.md#guards-de-mutação-lazy). Uma resposta HTTP totalmente serializada lê todo campo de qualquer forma, então não se espera que a coluna "Proteção mutável" acima mude muito com essa mudança — o ganho medido é específico de uma subárvore que cruza uma fronteira mas nunca é totalmente lida depois.

@@ -27,7 +27,7 @@ The parameter `user` is a typed boundary. Calls that pass a value with the wrong
 
 The runtime checks cover the types you already use:
 
-- **Primitives and literals**: `string`, `number`, `boolean`, `bigint`, `symbol`, and literal types. `null` and `undefined` are distinguished correctly. `NaN` and `Infinity` are accepted as ordinary numbers, with no domain checks applied.
+- **Primitives and literals**: `string`, `number`, `boolean`, `bigint`, `symbol`, and literal types. `null` and `undefined` are distinguished correctly. `NaN` and `Infinity` are accepted as ordinary numbers, with no domain checks applied — unless the field is typed with [`Int`/`Float`/`Str`](#ranged-values-int-float-str), which rejects them and enforces its own min/max bound.
 - **Unions, intersections, and tuples**, including template literal types.
 - **Objects are closed by default.** An object with an extra, undeclared property fails with `EXTRA_PROPERTY`. This is stricter than plain TypeScript, which allows extra properties in many positions. To opt out, use the `AllowExtraProperties()` decorator on a class or set the `allowExtraPropertiesAll` config flag.
 - **Dates.** `Date` is validated as a real `Date` instance, not as any object.
@@ -42,6 +42,32 @@ The runtime checks cover the types you already use:
 - **`Map`, `Set`, `ReadonlyMap`, and `ReadonlySet`.** Entries are validated against the declared key, value, and item types. `WeakMap` and `WeakSet` are not supported, because their contents cannot be iterated.
 - **Generators, `async`/`await`, and explicit-generic calls and constructors.**
 - **CommonJS module bindings.** An exported `let` or `var` is guarded on the `exports` object itself.
+
+## Ranged values: `Int`, `Float`, `Str`
+
+`Int`, `Float`, and `Str` put a min/max constraint directly in the type, with no decorator or validator class needed:
+
+```ts
+import type { Int, Float, Str } from '@ts-typed/core';
+
+class SignupDto {
+  age: Int<0, 150>;     // integer, 0..150
+  rating: Float<0, 5>;  // any finite number, 0..5
+  nickname: Str<1, 20>; // string, length 1..20
+}
+```
+
+- `Min`/`Max` (`MinLen`/`MaxLen` for `Str`) are each **independently optional** — leave one out to check only the other:
+  ```ts
+  type Count = Int<0>;          // >= 0, no upper bound
+  type Page = Int<number, 100>; // <= 100, no lower bound
+  ```
+- `Int` requires an integer (`Number.isInteger`); `Float` accepts any finite number. Both reject `NaN` and `±Infinity` regardless of bounds.
+- Wrapping the type in your own alias keeps the constraint: `type Age = Int<0, 150>;` behaves exactly like using `Int<0, 150>` directly.
+- A violation is reported the same way as any other mismatch: `StrictTypeError` with `code: 'TYPE_MISMATCH'` and an `expected` describing the bound that failed (e.g. `"integer >= 0 and <= 150"`).
+- `Min` greater than `Max` (e.g. `Int<150, 0>`) is an authoring mistake, not a type-system limitation: it is reported through the same `compiler.onUnsupported` lever as any other unsupported contract (`"warn"` by default, `"error"` fails the build on it — see [Configuration](./configuration.md)).
+- Because `Int`/`Float`/`Str` are ordinary (branded) TypeScript types, hovering a field typed with one in an editor shows the constraint (`Int<0, 150>`), not just `number` — there is nothing to configure for that; it falls out of how the type is declared.
+- This complements [`@ts-typed/validators`](./validators.md)'s `ValueObject`-based validators (`CPF`, `Email`, ...), it does not replace them: reach for `Int`/`Float`/`Str` for a plain bound on a primitive, and for `ValueObject` when the value needs its own identity/methods (formatting, masking, domain-specific checks).
 
 ## Errors: `StrictTypeError`
 

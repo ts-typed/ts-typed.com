@@ -18,6 +18,48 @@ O Express remove `passwordHash` antes de responder e valida `Email`. O script
 CSV faz parse, normaliza e rejeita e-mails inválidos. O resultado seguro sempre
 é verificado para garantir que o campo secreto não voltou à resposta.
 
+Esses números são de antes dos guards de mutação lazy descritos abaixo, mas
+continuam representativos para esta bateria específica: todo cenário acima lê
+todo campo de todo item antes de responder, e é exatamente esse o caso em que
+os guards lazy **não** trazem ganho — veja [Guards de mutação lazy](#guards-de-mutacao-lazy)
+para onde o ganho realmente aparece. Uma execução antes/depois no mesmo
+ambiente do hot-path de CSV deste projeto (parse/transformação/remoção de
+senhas, 500 linhas) confirmou que os dois são estatisticamente idênticos.
+
+## Guards de mutação lazy
+
+Instalar um guard de mutação num item de array ou numa propriedade de objeto
+costumava significar envolver eagerly cada item/propriedade aninhado em um
+`Proxy` no momento em que o valor cruzava uma fronteira tipada, lido ou não
+depois. Os guards agora são instalados de forma lazy, no primeiro `get` de
+cada slot, e memoizados para que uma leitura posterior do mesmo slot retorne
+o mesmo proxy — um `set` continua validando e envolvendo de forma síncrona
+exatamente como antes. Isso muda apenas *quando* a proteção de uma subárvore é
+instalada, nunca se uma mutação real é detectada.
+
+O ganho só aparece para uma subárvore que **não** é totalmente lida depois: um
+antes/depois reproduzível na própria suíte de benchmarks do pacote
+(`benchmarks/runtime-benchmark.cjs`, seção "Lazy mutation guards") mediu
+453.770 ns/op para uma travessia de fronteira de um array de 200 itens nunca
+lido depois, contra 858.901 ns/op para a mesma travessia seguida da leitura de
+todos os itens — o custo da validação estrutural domina o caso totalmente
+lido, então o ganho isolado da instalação do guard é real, mas estreito.
+
+Um item de Set e uma chave de Map são a única exceção — a identidade deles
+nunca pode ser trocada por um Proxy sem quebrar a ordem de iteração ou a busca
+por chave — então eles mantêm o wrap eager anterior para seus próprios filhos
+aninhados.
+
+## Memoização de schema entre arquivos
+
+Um tipo genérico usado em vários arquivos do mesmo build (por exemplo,
+`Repository<User>` importado por vários services) é resolvido uma vez por
+build, não uma vez por arquivo. O verificador do TypeScript reutiliza o mesmo
+objeto de tipo subjacente para instanciações genéricas idênticas dentro de um
+programa, e o resolvedor de schema já fazia cache por essa identidade —
+confirmado com um teste de regressão dedicado; nenhuma mudança de código foi
+necessária nessa parte.
+
 ## Como reproduzir
 
 ```bash

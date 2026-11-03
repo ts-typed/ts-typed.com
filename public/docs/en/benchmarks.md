@@ -25,3 +25,5 @@ The immutable path uses `TTOptImmut`: validate the object graph once and freeze 
 - Re-run the benchmark with your schema and deployment hardware before setting a latency budget.
 
 The benchmark source and exact command lines are maintained with the repository. CLI-dependent commands in this page require final factual review before publication; this page intentionally does not invent compiler flags.
+
+These numbers pre-date the lazy mutation guards covered in [Performance](./performance.md#lazy-mutation-guards). An HTTP response that gets fully serialized reads every field anyway, so the "Mutable protection" column above is not expected to move much from that change — the measured win is specific to a subtree that crosses a boundary but is never fully read afterward.

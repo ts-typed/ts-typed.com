@@ -18,6 +18,46 @@ Express removes `passwordHash` before responding and validates `Email`. The CSV
 script parses, normalizes, and rejects invalid email rows. Every safe result is
 checked to ensure the secret field is absent.
 
+These numbers pre-date the lazy mutation guards described below, but they stay
+representative for this specific battery: every scenario above reads every
+field of every item before responding, and that is exactly the case lazy
+guards do **not** speed up — see [Lazy mutation guards](#lazy-mutation-guards)
+for where the win actually shows up. A same-machine before/after run of this
+project's own CSV hot-path (parse/transform/strip-passwords, 500 rows)
+confirmed the two are statistically identical.
+
+## Lazy mutation guards
+
+Installing a mutation guard on an array item or object property used to mean
+eagerly wrapping every nested item/property in a `Proxy` at the moment a
+value crossed a typed boundary, whether or not anything downstream ever read
+that slot. Guards are now installed lazily, on the first `get` of each slot,
+and memoized so a later read of the same slot returns the identical proxy — a
+`set` still validates and wraps synchronously exactly as before. This changes
+only *when* a subtree's own protection is installed, never whether a real
+mutation is detected.
+
+The saving only shows up for a subtree that is **not** fully read afterward: a
+reproducible before/after in this package's own benchmark suite
+(`benchmarks/runtime-benchmark.cjs`, "Lazy mutation guards" section) measured
+453,770 ns/op for a 200-item array boundary crossing that is never read
+afterward, versus 858,901 ns/op for the same crossing followed by reading
+every item — structural validation cost dominates the fully-read case, so the
+isolated guard-installation saving is real but narrow in scope.
+
+A Set item and a Map key are the one exception — their identity can never be
+swapped for a Proxy without breaking iteration order or key lookups — so they
+keep the previous eager wrap for their own nested children.
+
+## Cross-file schema memoization
+
+A generic type used in several files of the same build (for example,
+`Repository<User>` imported by many services) is resolved once per build, not
+once per file. The TypeScript checker reuses the same underlying type object
+for identical generic instantiations within one program, and the schema
+resolver was already caching by that object's identity — confirmed with a
+dedicated regression test, no code change was needed for this part.
+
 ## Reproduce
 
 ```bash
