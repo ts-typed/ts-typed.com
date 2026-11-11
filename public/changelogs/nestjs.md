@@ -1,0 +1,291 @@
+# Changelog
+
+All notable changes to `@ts-typed/nestjs` are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/).
+
+## [0.1.33] - 2026-11-03
+
+### Changed
+
+- Bumped the `@ts-typed/core` peer/dev dependency to `0.7.0`. This range was
+  never advanced through `0.5.0`/`0.6.0`; it now jumps straight to `0.7.0`,
+  which adds ranged `Int`/`Float`/`Str` types, compiled-validator codegen,
+  lazy guards, cross-file schema memoization, and closes 4 previously
+  documented limitations (see `@ts-typed/core`'s own CHANGELOG for details).
+  No behavior change in this package itself.
+
+## [0.1.32] - 2026-10-28
+
+### Changed
+
+- Bumped the `@ts-typed/core` peer/dev dependency to `0.4.0`. That release
+  resolves `instanceof` across files for `compiler.strictClass`/`@StrictClass()`
+  (when the class is imported by name) and flips `compiler.strictClass`'s
+  global default to `true` (breaking). DTOs validated as class-typed
+  contracts are now checked by `instanceof` by default instead of
+  structurally; set `compiler.strictClass: false` or decorate with
+  `@StructuralClass()` to keep the previous behavior.
+
+## [0.1.31] - 2026-10-27
+
+### Changed
+
+- Bumped the `@ts-typed/core` peer/dev dependency to `0.3.0`, to pick up
+  `closeAggregateWindowOrThrow()` and array-of-DTOs parameter aggregation,
+  and to avoid a dual-module-instance of `@ts-typed/core` from a stale pin.
+
+## [0.1.30] - 2026-10-27
+
+### Changed
+
+- Bumped the `@ts-typed/core` peer/dev dependency to `0.2.0`. The previous
+  published peer range (`>=0.1.36 <0.2`) was never republished when the
+  peer dep was last updated in source (0.1.29 already carried `TypedValidationPipe`
+  and the compiler sync, but the package's own version was not bumped), so
+  `npm install` kept pulling an incompatible pair and risked a
+  dual-module-instance of `@ts-typed/core`.
+
+## [0.1.27] - 2026-10-21
+
+### Fixed
+
+- `installGlobalStrictTypeErrorFilter` picked whichever `NestFactory.create`
+  call its scan reached first, including one inside a conditional
+  test-harness branch — silently inserting the filter into the wrong
+  bootstrap and leaving the real production app unfiltered. More than one
+  such call in the file is now treated as ambiguous and left untouched,
+  consistent with this module's documented "ambiguous projects are left
+  untouched" rule.
+- An absolute `compilerOptions.tsConfigPath` in `nest-cli.json` was joined
+  under `projectRoot` instead of used as-is, producing a nonexistent path.
+- A `sourceRoot` naming a directory that legitimately starts with two dots
+  (e.g. `"..x"`) was rejected as if it escaped the project root, because the
+  check matched `..` as a text prefix/substring instead of a real path
+  segment.
+
+### Changed
+
+- Synced the `@ts-typed/compiler` peer/dev dependency to `0.1.35`.
+
+## [0.1.26] - 2026-10-21
+
+### Fixed
+
+- `installGlobalStrictTypeErrorFilter` threw a raw `TypeError` (instead of
+  falling back to the default, as malformed JSON already did) when
+  `nest-cli.json` had a non-string `sourceRoot` or
+  `compilerOptions.tsConfigPath`.
+- The "already registered" check for the global filter matched any text
+  containing `StrictTypeErrorFilter` and `.useGlobalFilters(` anywhere in
+  `main.ts`, including comments and unrelated strings, which could skip
+  registering the filter entirely. It is now an AST check for an actual
+  `<app>.useGlobalFilters(new StrictTypeErrorFilter())` call (honoring an
+  aliased import too), so a comment can never produce a false positive.
+
+### Changed
+
+- **`@ts-typed/compiler` moved from a pinned `dependencies` entry to a
+  `peerDependencies` range (`>=0.1.34 <0.2`)**, with `0.1.34` as a
+  `devDependencies` pin for local builds/tests. Every prior release bumped an
+  exact `dependencies` version to keep `StrictTypeErrorFilter` on the same
+  compiler runtime identity as the host application — this removes the need
+  to republish on every compiler patch, the same structural fix
+  `@ts-typed/express` applied in `fix: share compiler runtime as peer dependency`.
+
+## [0.1.25] - 2026-10-20
+
+### Fixed
+
+- Bumped the exact `@ts-typed/compiler` dependency to `0.1.31`. This keeps
+  `StrictTypeErrorFilter` on the same error-class identity as compiled
+  applications using `TTOptImmut`; without the matching exact dependency npm
+  installs a nested compiler copy and Nest turns contract violations into 500s.
+
+## [0.1.24] - 2026-10-20
+
+### Changed
+
+- Bumped the exact `@ts-typed/compiler` dependency to `0.1.30`, which materializes `ValueObject` values nested in typed objects, arrays, and tuples while preserving the shared `StrictTypeError` identity used by `StrictTypeErrorFilter`.
+
+## [0.1.23] - 2026-10-20
+
+### Changed
+
+- Bumped the exact `@ts-typed/compiler` dependency to `0.1.29`. This keeps Nest's `StrictTypeErrorFilter` on the same runtime error-class identity as applications using the compiler's native `ts-typed nest build` and `ts-typed nest start` commands.
+
+## [0.1.22] - 2026-10-19
+
+### Changed
+
+- Bumped the exact `@ts-typed/compiler` dependency to `0.1.28`, which caches immutable object-schema metadata during a validation/protection traversal. Pinning the matching compiler version preserves one shared `StrictTypeError` identity between instrumented application code and `StrictTypeErrorFilter`.
+
+## [0.1.21] - 2026-10-19
+
+### Fixed
+
+- Bumped the exact `@ts-typed/compiler` dependency to `0.1.27`. This keeps the Nest filter and an application's instrumented code on the same `StrictTypeError` class identity; otherwise, npm can install a second compiler copy below `@ts-typed/nestjs`, causing `@Catch(StrictTypeError)` to miss real validation errors and return an unhandled HTTP 500.
+
+## [0.1.20] - 2026-10-19
+
+### Changed
+
+- Bumped the `@ts-typed/compiler` dependency to `0.1.26`, which adds the `AggregateErrors()` class decorator (collects every validation violation in a parameter-boundary DTO into one `AggregateStrictTypeError`, instead of stopping at the first). No source changes were needed in this package: `AggregateStrictTypeError extends StrictTypeError`, so `StrictTypeErrorFilter`'s existing `@Catch(StrictTypeError)` already catches it, and `StrictTypeHttpError.fromStrictTypeError`'s existing `...exception.toJSON()` spread already surfaces the full `errors` array in the HTTP response body, since `AggregateStrictTypeError` overrides `toJSON()` to include it. Added end-to-end tests confirming this (a direct filter test, and a real Nest HTTP route test), both asserting every violation reaches the client in one 400 response.
+
+## [0.1.19] - 2026-10-19
+
+### Changed
+
+- Widened the supported range to `Node >=18` (from `>=22`) and `TypeScript >=5.4 <7` (from `>=5.9 <6`), matching the relaxed floor in `@ts-typed/compiler` 0.1.25. Bumped the `@ts-typed/compiler` dependency to `0.1.25`.
+
+## [0.1.18] - 2026-10-19
+
+### Changed
+
+- Bumped the `@ts-typed/compiler` dependency to `0.1.24` (tsconfig "paths" aliases are now resolved and rewritten at build time). No changes to this package's own code.
+
+## [0.1.17] - 2026-10-19
+
+### Changed
+
+- Bumped the `@ts-typed/compiler` dependency to `0.1.23` (generic call/construct validation now also covers inferred type arguments, not just explicit ones). No changes to this package's own code.
+
+## [0.1.16] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.22` (fixes `ValueObject` subclass detection for a class imported with `import type { X }`). No code changes in this package itself.
+
+## [0.1.15] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.21` (completes the `ValueObject` auto-constructed value types feature end to end — see that package's CHANGELOG). No code changes in this package itself.
+
+## [0.1.14] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.20` (adds the `ValueObject` base class and runtime auto-construction at boundaries, step 1-2 of a new feature; no code changes needed in this package since it has no HTTP-specific interaction with `ValueObject`). No code changes in this package itself.
+
+## [0.1.13] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.18`. The 0.1.12 release bumped this package's own version for a documentation-only change but missed re-syncing the pinned compiler dependency (left at `0.1.17` while the app's own direct dependency had already moved to `0.1.18`) — the same cross-package version-identity bug documented in the 0.1.3 and 0.1.8 changelog entries (two separate `StrictTypeError` classes at runtime). No code changes in this package itself.
+
+## [0.1.12] - 2026-10-18
+
+### Documentation
+
+- Full `README.md` rewrite: how the 400/500 status is decided, `ServerPopulated()` and `TypeErrorResponse()` usage with real DTO/Entity examples, `StrictTypeHttpError` for building a custom filter, example response bodies for each case, and known limitations (including the fail-fast/no-aggregation scope boundary). No code changes.
+
+## [0.1.11] - 2026-10-18
+
+### Added
+
+- A new `StrictTypeHttpError` class (extends Nest's `HttpException`) exposes the exact status/message mapping `StrictTypeErrorFilter` uses internally (the 400/500 server-fault heuristic, `isServerPopulated`, and `TypeErrorResponse` priority) as a standalone, reusable building block. `StrictTypeErrorFilter` is unchanged behavior-wise — it now builds a `StrictTypeHttpError` internally and writes it to the response, exactly as before. The new piece is for anyone who wants different handling than `StrictTypeErrorFilter` provides (custom logging, a different response body shape, i18n, …): write your own `@Catch(StrictTypeError)` filter and call `StrictTypeHttpError.fromStrictTypeError(exception)` to get the same resolved status/message/diagnostic fields (`code`, `propertyPath`, `expected`, `received`, `contractKind`, `operation`) without reimplementing any of the mapping logic. The original `StrictTypeError` stays available as `httpError.cause`.
+
+## [0.1.10] - 2026-10-18
+
+### Added
+
+- `StrictTypeErrorFilter` now honors a field's `TypeErrorResponse(message, status?)` decorator (from `@ts-typed/compiler@0.1.17`): when the thrown error carries `typeErrorResponseMessage`, the filter responds with that custom message and status (default `400`) instead of ts-typed's own message, as a per-property alternative to `class-validator`. The rest of the body stays the same shape as always — `code`, `propertyPath`, `expected`, `received`, `contractKind`, `operation` — so a client gets the custom message AND the full diagnostic detail (which type was expected, what was received, etc.) together. An explicit `TypeErrorResponse` takes PRIORITY over the `isServerPopulated`/`return`-`resolve`/`variable` server-fault heuristic — a developer who explicitly decorated a field already decided how that field's violation should look to a client, regardless of what the generic heuristic would otherwise pick. `TypeErrorResponse`/`TypeErrorResponseOptions` are re-exported from `@ts-typed/nestjs` directly, so `import { TypeErrorResponse } from '@ts-typed/nestjs'` works without a separate `@ts-typed/compiler` import.
+
+  **This is still a single-violation (fail-fast) mechanism** — it customizes the response for whichever ONE violation fires on the decorated property, not an aggregate of every violation across a DTO the way `class-validator` reports by default. Aggregating multiple violations into one response is a separate, materially larger change (ts-typed validates and populates a DTO field-by-field, throwing on the first bad field, unlike `class-validator`'s "populate everything, then validate the whole object in one pass" model) — tracked as a future enhancement, not attempted here.
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.17` (adds the `TypeErrorResponse` decorator this release consumes).
+
+## [0.1.9] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.16` (0.1.15 extends `GENERIC_TRANSPORT` call-site validation to `new` expressions; 0.1.16 extends it further to rest parameters and spread arguments). No code changes in this package itself.
+
+## [0.1.8] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.14` (0.1.13 extends `enforceMutationGuards` to nested arrays/Maps/Sets/objects recursively; 0.1.14 extends `GENERIC_TRANSPORT`'s call-site validation to an `async` function's resolved return value). No code changes in this package itself.
+
+## [0.1.7] - 2026-10-18
+
+### Added
+
+- Closes `FILTER_STATUS_FOR_ENTITY_HYDRATION`: `StrictTypeErrorFilter` now also treats `exception.isServerPopulated === true` as a server fault (alongside the existing `return`/`resolve`-operation and `variable`-contractKind checks), mapping it to HTTP 500 instead of 400. A class field (`contractKind: 'property'`) is otherwise indistinguishable between a TypeORM Entity reading corrupted data back from the database (a server fault) and a DTO populated from client input by `class-transformer` (a client fault) — both go through the exact same `contractKind`/`operation` path. The app now breaks that tie explicitly, by marking its Entity classes with `@ts-typed/compiler`'s new `ServerPopulated()` decorator (0.1.12): every `StrictTypeError` thrown for one of that class's fields then carries `isServerPopulated: true`, which this filter checks directly on the caught exception object — the flag is never present in the HTTP response body, since `StrictTypeError#toJSON()` deliberately excludes it.
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.12` (adds the `ServerPopulated()` marker this release relies on).
+
+## [0.1.6] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.11` (closes `GENERIC_TRANSPORT` for explicit type arguments). No code changes in this package itself.
+
+## [0.1.5] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.10` (extends the opt-in `enforceMutationGuards` flag to plain objects/interfaces in 0.1.10, closing `SEALED_OBJECTS` and the plain-object half of `REFLECTIVE_MUTATION`). No code changes in this package itself.
+
+## [0.1.4] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.9` (adds the opt-in `enforceClosedInstances` flag in 0.1.7, and extends the opt-in `enforceMutationGuards` flag to arrays in 0.1.8 and to `Map`/`Set` in 0.1.9). No code changes in this package itself — the same exact-pin re-sync routine as 0.1.3, done this time right after each compiler release instead of a few releases late.
+
+## [0.1.3] - 2026-10-18
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.6` (adds type-predicate/assertion-function validation in 0.1.5, and `exports`-level protection for exported `let`/`var` bindings in 0.1.6). No code changes in this package itself. Re-confirms, the hard way, why this exact-pinned bump must happen every time the compiler releases: skipping it for a few compiler releases let a consuming app's own `@ts-typed/compiler` devDependency drift ahead of this package's pinned transitive one, which gives the two packages two separate `StrictTypeError` classes at runtime (one per resolved module instance) — `@Catch(StrictTypeError)` then silently stops matching the exception the app throws, since it's an `instanceof` of the *other* class. Caught by teste-ts-typed's real `npm install` (not the dist-overlay shortcut, which never changes which copy is resolved) surfacing 8 failing HTTP filter/integration tests; fixed by this version bump alone, no source change needed.
+
+## [0.1.2] - 2026-10-17
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.2`, which fixes a severe regression 0.1.1 introduced (a readonly field with `?`/`!` locked immediately, breaking class-transformer-built DTOs) and adds `static` field and `Map`/`Set` support. No code changes in this package itself; this bump keeps both packages pinned to compatible, non-duplicated versions of `StrictTypeError` (an exact-pinned transitive dependency on a different compiler version than the app's own direct dependency would create two separate `StrictTypeError` classes, breaking `instanceof` checks across the package boundary).
+
+## [0.1.1] - 2026-10-17
+
+### Fixed
+
+- `StrictTypeErrorFilter` kept returning HTTP 400 for a violation on a plain local variable (e.g. `const entity = await repo.findOneBy(...)` reading corrupted data back from a database) because the value flowed through an `initialize`/`set` operation, not `return`/`resolve`. A local variable is never the client-facing surface of a request — client input only ever reaches a protected contract through a `parameter` or a `property` (a DTO's own fields) — so a violation whose `contractKind` is `variable` now also maps to HTTP 500, regardless of its `operation`.
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.1`.
+
+## [0.1.0] - 2026-10-17
+
+### Fixed
+
+- `StrictTypeErrorFilter` returned HTTP 400 for every `StrictTypeError`, including one raised while validating a function or method's own return value (for example, a mapper reading a corrupted row out of the database) — a server-side failure, not a bad request. A violation whose `operation` is `return` or `resolve` now maps to HTTP 500; every other operation (`argument`, `set`, `initialize`, …) keeps the existing 400.
+- The package's `exports` map did not expose `./package.json`, breaking `require.resolve('@ts-typed/nestjs/package.json')` and similar version-probing patterns.
+
+### Changed
+
+- Depends on `@ts-typed/compiler@0.1.0`, whose changelog covers the coverage gaps (class methods/constructors, decorated fields, `Date`) that this package's own tests exercise against a real NestJS app.
+
+## [0.0.1] - 2026-10-16
+
+Initial release.
+
+### Added
+
+- `nestjsIntegrationAdapter` (`IntegrationAdapterV1`): resolves a Nest project's `tsconfig.build.json` from `nest-cli.json`'s `compilerOptions.tsConfigPath` when the consumer's own `typets.config.json` does not set `tsconfig` explicitly.
+- `StrictTypeErrorFilter`: a Nest `ExceptionFilter` (`@Catch(StrictTypeError)`) that turns a `StrictTypeError` thrown by instrumented code — for example, a controller parameter DTO failing structural validation — into a 400 Bad Request response using `StrictTypeError#toJSON()`'s already-safe payload (no raw value, no stack). Does not replace Nest's own validation pipes and does not instantiate DTOs itself.
+- `installGlobalStrictTypeErrorFilter`: used by `ts-typed init` to register `StrictTypeErrorFilter` globally in a conventional `NestFactory.create(...)` bootstrap (`src/main.ts` by convention, or `nest-cli.json`'s `sourceRoot`). Idempotent — detects an existing registration and an ambiguous/non-conventional bootstrap and leaves the file untouched in both cases, returning an actionable message instead of guessing.
+
+### Requirements
+
+- Peer dependencies: `@nestjs/common` and `@nestjs/core` `>=10 <13`, `typescript >=5.9 <6`.
+- Depends on `@ts-typed/compiler` for `StrictTypeError` and the integration contract; does not duplicate runtime validation logic.
+
+### Known limits
+
+- `installGlobalStrictTypeErrorFilter` only recognizes a conventional, single top-level `const app = await NestFactory.create(...)` bootstrap. More elaborate bootstrap files (multiple applications, factory wrapped in a helper function, etc.) are left untouched; register `StrictTypeErrorFilter` manually in those cases.

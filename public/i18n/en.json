@@ -1,5 +1,15 @@
 {
-  "nav": { "docs": "Docs" },
+  "nav": { "docs": "Docs", "changelog": "Changelog" },
+  "changelog": {
+    "eyebrow": "Release notes",
+    "title": "Changelog",
+    "intro": "Pulled straight from each package's own CHANGELOG.md. Dates and entries come from the repositories themselves.",
+    "latest": "Latest",
+    "repo": "Repository",
+    "npm": "npm",
+    "loading": "Loading…",
+    "error": "Could not load this package's changelog."
+  },
   "landing": {
     "hero": {
       "eyebrow": "Runtime safety for TypeScript",

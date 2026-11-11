@@ -5,6 +5,7 @@ import { DocsLayoutComponent } from './pages/docs/docs-layout.component';
 import { DocPageComponent } from './pages/docs/doc-page.component';
 import { PerformancePageComponent } from './pages/docs/performance-page.component';
 import { FrameworkChoiceComponent } from './pages/docs/framework-choice.component';
+import { ChangelogPageComponent } from './pages/changelog-page.component';
 import { CURRENT_DOCUMENTATION_VERSION } from './docs-versions';
 import { langResolver } from './services/lang-resolver';
 
@@ -15,6 +16,7 @@ export const routes: Routes = [
     resolve: { lang: langResolver },
     children: [
       { path: '', component: LandingComponent },
+      { path: 'changelog', component: ChangelogPageComponent },
       {
         path: 'docs',
         component: DocsLayoutComponent,

@@ -17,6 +17,7 @@ import { SupportedLang } from '../services/language.service';
         </a>
         <nav class="hidden items-center gap-6 text-sm text-slate-300 sm:flex">
           <a [routerLink]="['/', lang, 'docs', 'introduction']" class="hover:text-cyan">{{ 'nav.docs' | translate }}</a>
+          <a [routerLink]="['/', lang, 'changelog']" class="hover:text-cyan">{{ 'nav.changelog' | translate }}</a>
           <a href="https://github.com/ts-typed" target="_blank" rel="noopener" class="hover:text-cyan">GitHub</a>
         </nav>
         <select
